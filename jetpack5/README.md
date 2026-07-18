@@ -7,6 +7,12 @@ JetPack 5, using a CUDA 11.4 build of onnxruntime 1.19.2 from
 Same features as the official jp6 image: `onnx` detector on the GPU, legacy
 `tensorrt` detector, Coral USB, jetson ffmpeg.
 
+## Prebuilt image
+
+```sh
+docker pull ghcr.io/gonuit/frigate-jetpack5:0.17.2-tensorrt-jp5
+```
+
 ## Building
 
 On a JetPack 5 device with docker and buildx:
