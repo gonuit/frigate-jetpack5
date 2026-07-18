@@ -1,8 +1,9 @@
-# Frigate 0.17 on JetPack 5
+# Frigate 0.18 (beta) on JetPack 5
 
-Upstream dropped the jp5 images in 0.16. This branch rebuilds v0.17.2 for
+Upstream dropped the jp5 images in 0.16. This branch rebuilds v0.18.0-beta1 for
 JetPack 5, using a CUDA 11.4 build of onnxruntime 1.19.2 from
 [onnxruntime-jetpack5](https://github.com/gonuit/onnxruntime-jetpack5).
+For stable 0.17.2 see branch [v0.17.2-jp5](https://github.com/gonuit/frigate-jetpack5/tree/v0.17.2-jp5).
 
 Same features as the official jp6 image: `onnx` detector on the GPU, legacy
 `tensorrt` detector, Coral USB, jetson ffmpeg.
@@ -10,7 +11,7 @@ Same features as the official jp6 image: `onnx` detector on the GPU, legacy
 ## Prebuilt image
 
 ```sh
-docker pull ghcr.io/gonuit/frigate-jetpack5:0.17.2-tensorrt-jp5
+docker pull ghcr.io/gonuit/frigate-jetpack5:0.18.0-beta1-tensorrt-jp5
 ```
 
 ## Building
@@ -57,6 +58,7 @@ Put the model in your config volume and use:
 detectors:
   onnx:
     type: onnx
+    device: Tensorrt
 
 model:
   model_type: yolo-generic
@@ -68,5 +70,7 @@ model:
   height: 320
 ```
 
-Tested on a Xavier NX (JetPack 5.0.2): three camera streams with hardware
-decode, ~10 ms inference (yolov9-s 320, CUDA EP). Coral USB is untested.
+Numbers from the 0.17.2 build on a Xavier NX (JetPack 5.0.2), same stack:
+three camera streams with hardware
+decode, ~9 ms inference with yolov9-s 320, ~21 ms with yolov9-c 416
+(`device: Tensorrt`). Orin and Coral USB are untested.
