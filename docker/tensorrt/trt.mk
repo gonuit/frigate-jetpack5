@@ -3,7 +3,9 @@ BOARDS += trt
 JETPACK5_BASE ?= nvcr.io/nvidia/l4t-tensorrt:r8.5.2-runtime	# L4T 35.3.1 JetPack 5.1.1
 JETPACK6_BASE ?= nvcr.io/nvidia/tensorrt:23.12-py3-igpu
 X86_DGPU_ARGS := ARCH=amd64 COMPUTE_LEVEL="50 60 70 80 90"
-JETPACK5_ARGS := ARCH=arm64 BASE_IMAGE=$(JETPACK5_BASE) SLIM_BASE=$(JETPACK5_BASE) TRT_BASE=$(JETPACK5_BASE)
+# focal: enable deb-src for apt-get build-dep, deadsnakes has no arm64 binaries
+JETPACK5_HOOK := if grep -q focal /etc/os-release; then sed -n "s/^deb /deb-src /p" /etc/apt/sources.list >> /etc/apt/sources.list; fi
+JETPACK5_ARGS := ARCH=arm64 BASE_IMAGE=$(JETPACK5_BASE) SLIM_BASE=$(JETPACK5_BASE) TRT_BASE=$(JETPACK5_BASE) BASE_HOOK='$(JETPACK5_HOOK)'
 JETPACK6_ARGS := ARCH=arm64 BASE_IMAGE=$(JETPACK6_BASE) SLIM_BASE=$(JETPACK6_BASE) TRT_BASE=$(JETPACK6_BASE)
 
 local-trt: version
