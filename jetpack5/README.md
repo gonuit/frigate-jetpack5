@@ -57,6 +57,7 @@ Put the model in your config volume and use:
 detectors:
   onnx:
     type: onnx
+    device: Tensorrt
 
 model:
   model_type: yolo-generic
@@ -69,4 +70,5 @@ model:
 ```
 
 Tested on a Xavier NX (JetPack 5.0.2): three camera streams with hardware
-decode, ~10 ms inference (yolov9-s 320, CUDA EP). Coral USB is untested.
+decode, ~9 ms inference with yolov9-s 320, ~21 ms with yolov9-c 416
+(`device: Tensorrt`). Orin and Coral USB are untested.
