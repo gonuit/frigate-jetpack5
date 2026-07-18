@@ -150,20 +150,27 @@ ARG DEBIAN_FRONTEND
 ARG TARGETARCH
 ARG DEBUG=false
 
+# python 3.11 from python-build-standalone, deadsnakes has no arm64/focal binaries
+ADD https://github.com/astral-sh/python-build-standalone/releases/download/20260623/cpython-3.11.15+20260623-aarch64-unknown-linux-gnu-install_only.tar.gz /tmp/python311.tar.gz
+RUN echo "1de978b7039f345dacdddc3efb0726ce5b957bbbd34161037a4b426aabb18bf5  /tmp/python311.tar.gz" | sha256sum -c \
+    && tar -xzf /tmp/python311.tar.gz --strip-components=1 -C /usr/local \
+    && rm /tmp/python311.tar.gz
+
+# python-build-standalone records CC=clang in sysconfig
+ENV CC=gcc CXX=g++
+
 # Use a separate container to build wheels to prevent build dependencies in final image
 RUN apt-get -qq update \
     && apt-get -qq install -y \
     apt-transport-https wget unzip \
     && apt-get -qq update \
     && apt-get -qq install -y \
-    python3.11 \
-    python3.11-dev \
     # opencv dependencies
     build-essential cmake git pkg-config libgtk-3-dev \
     libavcodec-dev libavformat-dev libswscale-dev libv4l-dev \
     libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev \
     gfortran openexr libatlas-base-dev libssl-dev\
-    libtbbmalloc2 libtbb-dev libdc1394-dev libopenexr-dev \
+    libtbb2 libtbb-dev libdc1394-22-dev libopenexr-dev \
     libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev \
     # sqlite3 dependencies
     tclsh \
@@ -171,7 +178,7 @@ RUN apt-get -qq update \
     gcc gfortran libopenblas-dev liblapack-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/local/bin/python3.11 1
 
 RUN wget -q https://bootstrap.pypa.io/get-pip.py -O get-pip.py \
     && sed -i 's/args.append("setuptools")/args.append("setuptools==77.0.3")/' get-pip.py \
@@ -251,6 +258,12 @@ ENV GLOG_minloglevel=3
 ENV GLOG_logtostderr=0
 
 ENV PATH="/usr/local/go2rtc/bin:/usr/local/tempio/bin:/usr/local/nginx/sbin:${PATH}"
+
+# python 3.11 from python-build-standalone, deadsnakes has no arm64/focal binaries
+ADD https://github.com/astral-sh/python-build-standalone/releases/download/20260623/cpython-3.11.15+20260623-aarch64-unknown-linux-gnu-install_only.tar.gz /tmp/python311.tar.gz
+RUN echo "1de978b7039f345dacdddc3efb0726ce5b957bbbd34161037a4b426aabb18bf5  /tmp/python311.tar.gz" | sha256sum -c \
+    && tar -xzf /tmp/python311.tar.gz --strip-components=1 -C /usr/local \
+    && rm /tmp/python311.tar.gz
 
 # Install dependencies
 RUN --mount=type=bind,source=docker/main/install_deps.sh,target=/deps/install_deps.sh \
