@@ -16,7 +16,15 @@ variable "COMPUTE_LEVEL" {
 variable "BASE_HOOK" {
   # Ensure an up-to-date python 3.11 is available in jetson images
   default = <<EOT
-if grep -iq \"ubuntu\" /etc/os-release; then
+if grep -q focal /etc/os-release; then
+  # focal (jetpack 5): deadsnakes has no arm64 binaries, use python-build-standalone
+  # and enable deb-src entries for apt-get build-dep
+  curl -fsSL -o /tmp/python311.tar.gz https://github.com/astral-sh/python-build-standalone/releases/download/20260623/cpython-3.11.15+20260623-aarch64-unknown-linux-gnu-install_only.tar.gz \
+    && echo "1de978b7039f345dacdddc3efb0726ce5b957bbbd34161037a4b426aabb18bf5  /tmp/python311.tar.gz" | sha256sum -c \
+    && tar -xzf /tmp/python311.tar.gz --strip-components=1 -C /usr/local \
+    && rm /tmp/python311.tar.gz \
+    && sed -n "s/^deb /deb-src /p" /etc/apt/sources.list >> /etc/apt/sources.list
+elif grep -iq \"ubuntu\" /etc/os-release; then
   . /etc/os-release
 
   # Add the deadsnakes PPA repository

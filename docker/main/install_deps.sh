@@ -12,7 +12,7 @@ apt-get -qq install --no-install-recommends -y \
     lbzip2 \
     procps vainfo \
     unzip locales tzdata libxml2 xz-utils \
-    python3.11 \
+    $(grep -q focal /etc/os-release || echo python3.11) \
     curl \
     lsof \
     jq \
@@ -23,20 +23,30 @@ apt-get -qq install --no-install-recommends -y \
     python3-h2 \
     libgomp1  # memryx detector
 
-update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+update-alternatives --install /usr/bin/python3 python3 "$(command -v python3.11)" 1
 
 mkdir -p -m 600 /root/.gnupg
 
 # install coral runtime
-wget -q -O /tmp/libedgetpu1-max.deb "https://github.com/feranick/libedgetpu/releases/download/16.0TF2.17.1-1/libedgetpu1-max_16.0tf2.17.1-1.bookworm_${TARGETARCH}.deb"
-unset DEBIAN_FRONTEND
-yes | dpkg -i /tmp/libedgetpu1-max.deb && export DEBIAN_FRONTEND=noninteractive
-rm /tmp/libedgetpu1-max.deb
+if [[ "${BASE_IMAGE}" == *"l4t"* ]]; then
+    # the bookworm deb below does not install on focal, use Google's coral apt repo
+    curl -fsSLo - https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+        gpg --dearmor -o /etc/apt/trusted.gpg.d/google-cloud-packages-archive-keyring.gpg
+    echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | tee /etc/apt/sources.list.d/coral-edgetpu.list
+    echo "libedgetpu1-max libedgetpu/accepted-eula select true" | debconf-set-selections
+    apt-get -qq update
+    apt-get -qq install --no-install-recommends --no-install-suggests -y libedgetpu1-max
+else
+    wget -q -O /tmp/libedgetpu1-max.deb "https://github.com/feranick/libedgetpu/releases/download/16.0TF2.17.1-1/libedgetpu1-max_16.0tf2.17.1-1.bookworm_${TARGETARCH}.deb"
+    unset DEBIAN_FRONTEND
+    yes | dpkg -i /tmp/libedgetpu1-max.deb && export DEBIAN_FRONTEND=noninteractive
+    rm /tmp/libedgetpu1-max.deb
+fi
 
 # install mesa-teflon-delegate from bookworm-backports
 # Only available for arm64 at the moment
 if [[ "${TARGETARCH}" == "arm64" ]]; then
-    if [[ "${BASE_IMAGE}" == *"nvcr.io/nvidia/tensorrt"* ]]; then
+    if [[ "${BASE_IMAGE}" == *"nvcr.io/nvidia/tensorrt"* || "${BASE_IMAGE}" == *"l4t"* ]]; then
         echo "Info: Skipping apt-get commands because BASE_IMAGE includes 'nvcr.io/nvidia/tensorrt' for arm64."
     else
         echo "deb http://deb.debian.org/debian bookworm-backports main" | tee /etc/apt/sources.list.d/bookworm-backbacks.list

@@ -164,14 +164,15 @@ RUN apt-get -qq update \
     apt-transport-https wget unzip \
     && apt-get -qq update \
     && apt-get -qq install -y \
-    python3.11 \
-    python3.11-dev \
+    # focal (jetpack 5): python 3.11 comes from BASE_HOOK, deadsnakes has no arm64 binaries
+    $(grep -q focal /etc/os-release || echo python3.11 python3.11-dev) \
     # opencv dependencies
     build-essential cmake git pkg-config libgtk-3-dev \
     libavcodec-dev libavformat-dev libswscale-dev libv4l-dev \
     libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev \
     gfortran openexr libatlas-base-dev libssl-dev\
-    libtbbmalloc2 libtbb-dev libdc1394-dev libopenexr-dev \
+    $(grep -q focal /etc/os-release && echo libtbb2 libdc1394-22-dev || echo libtbbmalloc2 libdc1394-dev) \
+    libtbb-dev libopenexr-dev \
     libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev \
     # sqlite3 dependencies
     tclsh \
@@ -179,7 +180,10 @@ RUN apt-get -qq update \
     gcc gfortran libopenblas-dev liblapack-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+RUN update-alternatives --install /usr/bin/python3 python3 $(command -v python3.11) 1
+
+# python-build-standalone (focal) records CC=clang in sysconfig
+ENV CC=gcc CXX=g++
 
 RUN wget -q https://bootstrap.pypa.io/get-pip.py -O get-pip.py \
     && sed -i 's/args.append("setuptools")/args.append("setuptools==77.0.3")/' get-pip.py \
@@ -195,6 +199,8 @@ COPY docker/main/build_pysqlite3.sh /build_pysqlite3.sh
 RUN /build_pysqlite3.sh
 
 COPY docker/main/requirements-wheels.txt /requirements-wheels.txt
+# focal (jetpack 5): openvino >= 2025.3 ships no aarch64 wheels for glibc 2.31
+RUN if grep -q focal /etc/os-release; then sed -i 's/^openvino == .*/openvino == 2025.2.*/' /requirements-wheels.txt; fi
 RUN pip3 wheel --wheel-dir=/wheels -r /requirements-wheels.txt && \
     if [ "$DEBUG" = "true" ]; then \
         pip3 wheel --wheel-dir=/wheels -r /requirements-dev.txt; \
