@@ -40,6 +40,8 @@ class ONNXDetector(DetectionApi):
             path,
             detector_config.device,
             model_type=detector_config.model.model_type,
+            # fp32 TensorRT engines are several times slower on Jetson; USE_FP_16=False opts out
+            requires_fp16=True,
         )
 
         self.onnx_model_type = detector_config.model.model_type
